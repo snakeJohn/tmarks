@@ -9,7 +9,7 @@ import type { Env, Bookmark, RouteParams } from '../../lib/types'
 import { success, badRequest, internalError } from '../../lib/response'
 import { requireApiKeyAuth, ApiKeyAuthContext } from '../../middleware/api-key-auth-pages'
 
-// GET /api/search - 全局搜索书签和标签
+// GET /api/search - Global search for bookmarks and tags
 type BookmarkWithTags = Bookmark & {
   tags: Array<{ id: string; name: string; color: string | null }>
 }
@@ -28,8 +28,8 @@ export const onRequestGet: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[] 
     const searchTerm = `%${query.trim()}%`
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100)
 
-    try {
-      // 搜索书签
+      try {
+      // Search bookmarks
       const { results: bookmarks } = await context.env.DB.prepare(
         `SELECT b.*
          FROM bookmarks b
@@ -41,7 +41,7 @@ export const onRequestGet: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[] 
         .bind(userId, searchTerm, searchTerm, searchTerm, limit)
         .all<Bookmark>()
 
-      // 优化：使用单次查询获取所有书签的标签
+      // Optimize: Use single query to get all bookmark tags
       let bookmarksWithTags: BookmarkWithTags[] = (bookmarks || []).map(bookmark => ({
         ...bookmark,
         tags: [],
@@ -50,7 +50,7 @@ export const onRequestGet: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[] 
       if (bookmarksWithTags.length > 0) {
         const bookmarkIds = bookmarksWithTags.map(b => b.id)
 
-        // 一次性获取所有书签的标签
+        // Get all tags for bookmarks at once
         const { results: allTags } = await context.env.DB.prepare(
           `SELECT
              bt.bookmark_id,
@@ -66,7 +66,7 @@ export const onRequestGet: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[] 
           .bind(...bookmarkIds)
           .all<{ bookmark_id: string; id: string; name: string; color: string | null }>()
 
-        // 将标签按书签ID分组
+        // Group tags by bookmark ID
         const tagsByBookmarkId = new Map<string, Array<{ id: string; name: string; color: string | null }>>()
         for (const tag of allTags || []) {
           if (!tagsByBookmarkId.has(tag.bookmark_id)) {
@@ -82,14 +82,14 @@ export const onRequestGet: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[] 
           }
         }
 
-        // 组装书签和标签数据
+        // Assemble bookmarks with tags
         bookmarksWithTags = bookmarksWithTags.map(bookmark => ({
           ...bookmark,
           tags: tagsByBookmarkId.get(bookmark.id) || [],
         }))
       }
 
-      // 搜索标签
+      // Search tags
       const { results: tags } = await context.env.DB.prepare(
         `SELECT
           t.id,

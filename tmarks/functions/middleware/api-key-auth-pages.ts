@@ -1,12 +1,12 @@
 /**
  * API Key Authentication Middleware for Cloudflare Pages Functions
- * 用于对外 API 的 API Key 认证
+ * 用于对外 API �?API Key 认证
  */
 
 import type { PagesFunction } from '@cloudflare/workers-types'
 import type { Env, RouteParams } from '../lib/types'
 import { validateApiKey } from '../lib/api-key/validator'
-import { checkRateLimit, recordRequest } from '../lib/api-key/rate-limiter'
+import { consumeRateLimit } from '../lib/api-key/rate-limiter'
 import { logApiKeyUsage } from '../lib/api-key/logger'
 import { unauthorized, forbidden, tooManyRequests } from '../lib/response'
 import { hasPermission } from '../../shared/permissions'
@@ -18,7 +18,7 @@ export interface ApiKeyAuthContext extends Record<string, unknown> {
 }
 
 /**
- * 创建 API Key 认证中间件工厂函数
+ * 创建 API Key 认证中间件工厂函�?
  * @param requiredPermission 需要的权限
  */
 export function requireApiKeyAuth(
@@ -50,7 +50,7 @@ export function requireApiKeyAuth(
 
       const { data: keyData, permissions } = validation
 
-      // 3. 检查权限
+      // 3. 检查权�?
       if (!hasPermission(permissions, requiredPermission)) {
         return forbidden({
           code: 'INSUFFICIENT_PERMISSIONS',
@@ -60,15 +60,29 @@ export function requireApiKeyAuth(
         })
       }
 
-      // 4. 检查速率限制（KV 已移除，跳过限流）
-      // const kv = context.env.TMARKS_KV
-      // if (kv) {
-      //   const rateLimitResult = await checkRateLimit(keyData.id, kv)
-      //   if (!rateLimitResult.allowed) {
-      //     return tooManyRequests(...)
-      //   }
-      //   await recordRequest(keyData.id, kv)
-      // }
+      // 4. ?????D1?
+      const rateLimitResult = await consumeRateLimit(keyData.id, context.env.DB)
+
+      const rateLimitHeaders: Record<string, string> = {
+        'X-RateLimit-Limit': String(rateLimitResult.limit),
+        'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+        'X-RateLimit-Reset': String(Math.ceil(rateLimitResult.reset / 1000)),
+      }
+
+      if (!rateLimitResult.allowed) {
+        const retryAfter = rateLimitResult.retryAfter || 0
+        return tooManyRequests(
+          {
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Too many requests. Please try again later.',
+          },
+          {
+            'Retry-After': String(retryAfter),
+            ...rateLimitHeaders,
+          }
+        )
+      }
+
 
       // 5. 获取请求 IP
       const ip =
@@ -81,7 +95,7 @@ export function requireApiKeyAuth(
       context.data.api_key_id = keyData.id
       context.data.api_key_permissions = permissions
 
-      // 8. 更新最后使用信息（异步，不阻塞请求）
+      // 8. 更新最后使用信息（异步，不阻塞请求�?
       context.waitUntil(
         (async () => {
           try {
@@ -117,9 +131,16 @@ export function requireApiKeyAuth(
         })()
       )
 
-      // 10. 认证成功，继续到下一个处理函数（返回 undefined 或 next()）
-      // 在 Pages Functions 中，中间件返回 undefined 表示继续执行后续函数
-      return context.next()
+      // 10. 认证成功，继续到下一个处理函数（返回 undefined �?next()�?
+      // �?Pages Functions 中，中间件返�?undefined 表示继续执行后续函数
+      const response = await context.next()
+      const headers = new Headers(response.headers)
+      Object.entries(rateLimitHeaders).forEach(([k, v]) => headers.set(k, v))
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      })
     } catch (error) {
       console.error('API Key auth middleware error:', error)
       return unauthorized({

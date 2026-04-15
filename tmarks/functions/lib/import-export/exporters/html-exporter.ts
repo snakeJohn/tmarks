@@ -1,5 +1,5 @@
 /**
- * HTML 格式导出器
+ * HTML 格式导出�?
  * 将书签数据导出为 Netscape 书签格式，兼容主流浏览器
  */
 
@@ -7,8 +7,10 @@ import type {
   Exporter, 
   TMarksExportData, 
   ExportOptions, 
-  ExportOutput 
+  ExportOutput
 } from '../../../../shared/import-export-types'
+
+import { generateTabGroupsNetscapeSection } from './tab-groups-netscape'
 
 export class HtmlExporter implements Exporter {
   readonly format = 'html' as const
@@ -18,7 +20,7 @@ export class HtmlExporter implements Exporter {
       // 生成 HTML 内容
       const htmlContent = this.generateHtml(data, options)
       
-      // 生成文件名
+      // 生成文件�?
       const filename = this.generateFilename(data.exported_at)
       
       return {
@@ -36,8 +38,13 @@ export class HtmlExporter implements Exporter {
     const includeMetadata = options?.include_metadata ?? true
     const includeTags = options?.include_tags ?? true
     
-    // 按文件夹组织书签（使用标签作为文件夹）
-    const bookmarksByFolder = this.organizeBookmarksByFolder(data.bookmarks, includeTags)
+    // 按文件夹组织书签（使用标签作为文件夹�?    const bookmarksByFolder = this.organizeBookmarksByFolder(data.bookmarks, includeTags)
+    const tabGroupsSection = generateTabGroupsNetscapeSection({
+      tabGroups: data.tab_groups,
+      exportedAt: data.exported_at,
+      escapeHtml: (text) => this.escapeHtml(text),
+      toUnixTimestamp: (iso) => this.toUnixTimestamp(iso),
+    })
     
     const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
 <!-- This is an automatically generated file.
@@ -48,6 +55,7 @@ export class HtmlExporter implements Exporter {
 <H1>Bookmarks</H1>
 
 <DL><p>
+${tabGroupsSection}
 ${this.generateBookmarkFolders(bookmarksByFolder, data.exported_at)}
 ${includeMetadata ? this.generateMetadataComment(data) : ''}
 </DL><p>`
@@ -58,18 +66,17 @@ ${includeMetadata ? this.generateMetadataComment(data) : ''}
   private organizeBookmarksByFolder(bookmarks: Array<Record<string, unknown>>, includeTags: boolean): Map<string, Array<Record<string, unknown>>> {
     const folderMap = new Map<string, Array<Record<string, unknown>>>()
     
-    // 未分类书签
-    folderMap.set('未分类', [])
+    // 未分类书�?    folderMap.set('未分�?, [])
     
     bookmarks.forEach(bookmark => {
       if (!includeTags || bookmark.tags.length === 0) {
         // 没有标签的书签放入未分类
-        const uncategorized = folderMap.get('未分类')
+        const uncategorized = folderMap.get('未分�?)
         if (uncategorized) {
           uncategorized.push(bookmark)
         }
       } else {
-        // 有标签的书签，为每个标签创建文件夹
+        // 有标签的书签，为每个标签创建文件�?
         bookmark.tags.forEach((tag: string) => {
           if (!folderMap.has(tag)) {
             folderMap.set(tag, [])
@@ -83,9 +90,9 @@ ${includeMetadata ? this.generateMetadataComment(data) : ''}
     })
     
     // 移除空的未分类文件夹
-    const uncategorized = folderMap.get('未分类')
+    const uncategorized = folderMap.get('未分�?)
     if (uncategorized && uncategorized.length === 0) {
-      folderMap.delete('未分类')
+      folderMap.delete('未分�?)
     }
     
     return folderMap
@@ -114,14 +121,14 @@ ${includeMetadata ? this.generateMetadataComment(data) : ''}
     const addDate = bookmark.created_at ? this.toUnixTimestamp(bookmark.created_at) : this.toUnixTimestamp(new Date().toISOString())
     const lastModified = bookmark.updated_at ? this.toUnixTimestamp(bookmark.updated_at) : addDate
     
-    // 构建属性
+    // 构建属�?
     const attributes = [
       `HREF="${this.escapeHtml(bookmark.url)}"`,
       `ADD_DATE="${addDate}"`,
       `LAST_MODIFIED="${lastModified}"`
     ]
     
-    // 添加可选属性
+    // 添加可选属�?
     if (bookmark.is_pinned) {
       attributes.push('PERSONAL_TOOLBAR_FOLDER="true"')
     }
@@ -145,6 +152,8 @@ ${includeMetadata ? this.generateMetadataComment(data) : ''}
     const stats = {
       totalBookmarks: data.bookmarks.length,
       totalTags: data.tags.length,
+      totalTabGroups: data.tab_groups?.length || 0,
+      totalTabGroupItems: data.tab_groups?.reduce((sum, g) => sum + (g.items?.length || 0), 0) || 0,
       exportedAt: data.exported_at,
       version: data.version
     }
@@ -153,6 +162,8 @@ ${includeMetadata ? this.generateMetadataComment(data) : ''}
 <!-- TMarks Export Metadata
      Total Bookmarks: ${stats.totalBookmarks}
      Total Tags: ${stats.totalTags}
+     Total Tab Groups: ${stats.totalTabGroups}
+     Total Tab Group Items: ${stats.totalTabGroupItems}
      Exported At: ${stats.exportedAt}
      Export Version: ${stats.version}
 -->`
@@ -170,7 +181,7 @@ ${includeMetadata ? this.generateMetadataComment(data) : ''}
   }
 
   private escapeHtml(text: string): string {
-    // 使用标准的 HTML 转义方法
+    // 使用标准�?HTML 转义方法
     return text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -236,14 +247,14 @@ ${includeMetadata ? this.generateMetadataComment(data) : ''}
 }
 
 /**
- * 创建 HTML 导出器实例
+ * 创建 HTML 导出器实�?
  */
 export function createHtmlExporter(): HtmlExporter {
   return new HtmlExporter()
 }
 
 /**
- * 快速导出为 HTML 字符串
+ * 快速导出为 HTML 字符�?
  */
 export async function exportToHtml(
   data: TMarksExportData, 

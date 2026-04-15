@@ -1,14 +1,14 @@
 /**
  * API Keys 管理端点
- * GET /api/v1/settings/api-keys - 列出所有 API Keys
+ * GET /api/v1/settings/api-keys - 列出所�?API Keys
  * POST /api/v1/settings/api-keys - 创建新的 API Key
  */
 
 import type { PagesFunction } from '@cloudflare/workers-types'
-import type { Env, RouteParams } from '../../../../lib/types'
-import { success, badRequest, created, internalError } from '../../../../lib/response'
+import type { Env, RouteParams } from '../../lib/types'
+import { success, badRequest, created, internalError } from '../../lib/response'
 import { requireAuth, AuthContext } from '../../../../middleware/auth'
-import { generateApiKey } from '../../../../lib/api-key/generator'
+import { generateApiKey } from '../../lib/api-key/generator'
 import { PERMISSION_TEMPLATES } from '../../../../../shared/permissions'
 
 interface CreateApiKeyRequest {
@@ -19,13 +19,15 @@ interface CreateApiKeyRequest {
   expires_at?: string | null
 }
 
-// 获取用户的 API Key 配额限制
+// 获取用户�?API Key 配额限制
 async function getUserApiKeyLimit(_db: D1Database, _userId: string): Promise<number> {
-  // 取消限制，所有用户都可以创建无限个 API Key
+  // 取消限制，所有用户都可以创建无限�?API Key
+  void _db
+  void _userId
   return 999
 }
 
-// GET /api/v1/settings/api-keys - 列出所有 API Keys
+// GET /api/v1/settings/api-keys - 列出所�?API Keys
 interface ApiKeyRow {
   id: string
   key_prefix: string
@@ -90,7 +92,7 @@ export const onRequestPost: PagesFunction<Env, RouteParams, AuthContext>[] = [
     const userId = context.data.user_id
 
     try {
-      // 1. 检查配额
+      // 1. 检查配�?
       const quota = await context.env.DB.prepare(
         `SELECT COUNT(*) as count FROM api_keys WHERE user_id = ? AND status = 'active'`
       )
@@ -126,7 +128,7 @@ export const onRequestPost: PagesFunction<Env, RouteParams, AuthContext>[] = [
         // 使用模板
         permissionsList = PERMISSION_TEMPLATES[template].permissions
       } else if (permissions && Array.isArray(permissions)) {
-        // 自定义权限
+        // 自定义权�?
         permissionsList = permissions
       } else {
         // 默认使用基础模板
@@ -145,7 +147,7 @@ export const onRequestPost: PagesFunction<Env, RouteParams, AuthContext>[] = [
       if (expires_at) {
         let expiresDate: Date
 
-        // 支持相对时间格式 (30d, 90d 等) 和 ISO 日期格式
+        // 支持相对时间格式 (30d, 90d �? �?ISO 日期格式
         if (expires_at.match(/^\d+d$/)) {
           const days = parseInt(expires_at.slice(0, -1))
           expiresDate = new Date()
@@ -190,7 +192,7 @@ export const onRequestPost: PagesFunction<Env, RouteParams, AuthContext>[] = [
       // 8. 返回完整 Key（仅此一次）
       return created({
         id: keyId,
-        key, // ⚠️ 完整 Key 仅返回一次
+        key, // ⚠️ 完整 Key 仅返回一�?
         key_prefix: prefix,
         name: name.trim(),
         description: description?.trim() || null,

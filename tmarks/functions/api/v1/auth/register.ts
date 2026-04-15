@@ -14,7 +14,34 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
     const db = context.env.DB
 
-    // 检查是否允许注册
+    // 简单的注册速率限制：每�?IP 每小时最�?5 �?
+    const clientIP = context.request.headers.get('CF-Connecting-IP') || 'unknown'
+
+    // 先记录本次注册尝试（无论成败都计入速率限制�?
+    try {
+      await db.prepare(
+        `INSERT INTO audit_logs (user_id, event_type, ip, payload, created_at)
+         VALUES ('system', 'register_attempt', ?, ?, datetime('now'))`
+      ).bind(clientIP, JSON.stringify({ ip: clientIP })).run()
+    } catch {
+      // 审计日志插入失败不影响注册流�?
+    }
+
+    const rateCheck = await db.prepare(
+      `SELECT COUNT(*) as cnt FROM audit_logs
+       WHERE event_type = 'register_attempt'
+       AND ip = ?
+       AND created_at > datetime('now', '-1 hour')`
+    ).bind(clientIP).first<{ cnt: number }>()
+    
+    if (rateCheck && rateCheck.cnt >= 5) {
+      return new Response(JSON.stringify({ code: 'RATE_LIMITED', message: 'Too many registration attempts' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': '3600' }
+      })
+    }
+
+    // 检查是否允许注�?
     if (context.env.ALLOW_REGISTRATION !== 'true') {
       return badRequest('Registration is currently disabled')
     }
@@ -41,7 +68,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const username = sanitizeString(body.username, 20)
     const email = body.email ? sanitizeString(body.email, 255) : null
 
-    // 检查用户名是否已存在
+    // 检查用户名是否已存�?
     const existingUser = await db.prepare(
       'SELECT id FROM users WHERE LOWER(username) = LOWER(?)'
     )
@@ -94,7 +121,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         .run()
     } catch (error) {
       if (error instanceof Error && (/no such column: tag_layout/i.test(error.message) || /no such column: sort_by/i.test(error.message))) {
-        // 尝试不包含 tag_layout 和 sort_by
+        // 尝试不包�?tag_layout �?sort_by
         await db.prepare(
           `INSERT INTO user_preferences (user_id, theme, page_size, view_mode, density, updated_at)
            VALUES (?, 'light', 30, 'list', 'normal', ?)`
@@ -106,7 +133,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
     }
 
-    // 记录审计日志 (失败不影响注册)
+    // 记录审计日志 (失败不影响注�?
     try {
       await db.prepare(
         `INSERT INTO audit_logs (user_id, event_type, payload, ip, user_agent, created_at)
@@ -121,7 +148,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         )
         .run()
     } catch (auditError) {
-      // 审计日志失败不影响注册,只记录错误
+      // 审计日志失败不影响注�?只记录错�?
       console.error('Failed to create audit log:', auditError)
     }
 

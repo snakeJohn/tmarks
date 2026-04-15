@@ -1,11 +1,11 @@
 /**
- * 批量书签创建处理器
+ * 批量书签创建处理�?
  */
 
 import type { EventContext } from '@cloudflare/workers-types'
 import type { Env, RouteParams } from '../../../lib/types'
 import type { ApiKeyAuthContext } from '../../../middleware/api-key-auth-pages'
-import { success, badRequest, internalError } from '../../../lib/response'
+import { success, badRequest } from '../../../lib/response'
 import { isValidUrl, sanitizeString } from '../../../lib/validation'
 import { generateUUID } from '../../../lib/crypto'
 import { invalidatePublicShareCache } from '../../shared/cache'
@@ -104,7 +104,7 @@ export async function batchCreateBookmarks(
       const isArchived = item.is_archived ? 1 : 0
       const isPublic = item.is_public ? 1 : 0
 
-      // 检查 URL 是否已存在
+      // 检�?URL 是否已存�?
       const existing = await context.env.DB.prepare(
         'SELECT id, deleted_at FROM bookmarks WHERE user_id = ? AND url = ?'
       )
@@ -142,12 +142,12 @@ export async function batchCreateBookmarks(
           )
           .run()
 
-        // 清除旧标签关联
+        // 清除旧标签关�?
         await context.env.DB.prepare('DELETE FROM bookmark_tags WHERE bookmark_id = ?')
           .bind(bookmarkId)
           .run()
       } else {
-        // 创建新书签
+        // 创建新书�?
         bookmarkId = generateUUID()
         await context.env.DB.prepare(
           `INSERT INTO bookmarks (id, user_id, title, url, description, cover_image, cover_image_id, favicon, is_pinned, is_archived, is_public, created_at, updated_at)
@@ -186,17 +186,16 @@ export async function batchCreateBookmarks(
 
     } catch (error) {
       result.failed++
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`[Batch Handler] Failed to create bookmark ${i}:`, error)
       result.errors!.push({
         index: i,
         url: item.url || '',
-        error: errorMessage
+        error: 'Failed to create bookmark'
       })
-      console.error(`[Batch Handler] Failed to create bookmark ${i}:`, error)
     }
   }
 
-  // 清理空错误数组
+  // 清理空错误数�?
   if (result.errors!.length === 0) {
     delete result.errors
   }
