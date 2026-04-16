@@ -1,6 +1,7 @@
 /**
- * API Key Logger - 审计日志记录
- * 简化版本，只记录关键信�? */
+ * API Key Logger - Records API key usage and provides statistics
+ * Automatically cleans up old logs, keeping only the latest 100 entries per key
+ */
 
 interface LogEntry {
   api_key_id: string
@@ -12,8 +13,8 @@ interface LogEntry {
 }
 
 /**
- * 记录 API Key 使用日志
- * @param entry 日志条目
+ * Log API Key usage
+ * @param entry Log entry data
  * @param db D1 Database
  */
 export async function logApiKeyUsage(entry: LogEntry, db: D1Database): Promise<void> {
@@ -33,21 +34,23 @@ export async function logApiKeyUsage(entry: LogEntry, db: D1Database): Promise<v
       )
       .run()
 
-    // 异步清理旧日志（每个 Key 保留最�?100 条）
+    // Async cleanup (keep only latest 100 logs per key)
     await cleanupOldLogs(entry.api_key_id, db)
   } catch (error) {
-    // 日志失败不应阻塞请求，只记录错误
+    // Don't throw error, just log it
     console.error('Failed to log API key usage:', error)
   }
 }
 
 /**
- * 清理旧日志，保留最�?100 �? * @param apiKeyId API Key ID
+ * Cleanup old logs, keep only the latest 100 entries
+ * @param apiKeyId API Key ID
  * @param db D1 Database
  */
 async function cleanupOldLogs(apiKeyId: string, db: D1Database): Promise<void> {
   try {
-    // 删除超过 100 条的旧记�?    await db
+    // Keep only the latest 100 logs
+    await db
       .prepare(
         `DELETE FROM api_key_logs
          WHERE api_key_id = ?
@@ -66,10 +69,11 @@ async function cleanupOldLogs(apiKeyId: string, db: D1Database): Promise<void> {
 }
 
 /**
- * 获取 API Key 使用日志
+ * Get API Key usage logs
  * @param apiKeyId API Key ID
- * @param limit 返回数量（默�?10�? * @param db D1 Database
- * @returns 日志列表
+ * @param limit Maximum number of logs to return (default: 10)
+ * @param db D1 Database
+ * @returns Array of log entries
  */
 export async function getApiKeyLogs(
   apiKeyId: string,
@@ -91,10 +95,10 @@ export async function getApiKeyLogs(
 }
 
 /**
- * 获取 API Key 使用统计
+ * Get API Key usage statistics
  * @param apiKeyId API Key ID
  * @param db D1 Database
- * @returns 统计信息
+ * @returns Statistics object with total requests, last used time and IP
  */
 export async function getApiKeyStats(
   apiKeyId: string,

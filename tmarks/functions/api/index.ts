@@ -1,13 +1,12 @@
 /**
- * 对外 API - 根路径和 API 信息
- * 路径: /api
- * 无需认证
+ *  API -  API 
+ * : /api
+ * 
  */
 
 import type { PagesFunction } from '@cloudflare/workers-types'
 import type { Env } from '../lib/types'
 
-// GET /api - API 信息和文档链�?
 export const onRequestGet: PagesFunction<Env> = async () => {
   return Response.json({
     name: 'TMarks API',

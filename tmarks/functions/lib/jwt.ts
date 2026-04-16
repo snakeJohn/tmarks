@@ -4,9 +4,8 @@ export interface JWTPayload {
   iat: number
   session_id?: string
 }
-
 /**
- * 生成 JWT
+ * Generate JWT token
  */
 export async function generateJWT(
   payload: Omit<JWTPayload, 'exp' | 'iat'>,
@@ -15,57 +14,44 @@ export async function generateJWT(
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
   const exp = now + parseExpiry(expiresIn)
-
   const fullPayload: JWTPayload = {
     ...payload,
     iat: now,
     exp,
   }
-
   const header = {
     alg: 'HS256',
     typ: 'JWT',
   }
-
   const encodedHeader = base64UrlEncode(JSON.stringify(header))
   const encodedPayload = base64UrlEncode(JSON.stringify(fullPayload))
-
   const signature = await sign(`${encodedHeader}.${encodedPayload}`, secret)
-
   return `${encodedHeader}.${encodedPayload}.${signature}`
 }
-
 /**
- * 验证并解�?JWT
+ * Verify JWT token
  */
 export async function verifyJWT(token: string, secret: string): Promise<JWTPayload> {
   const parts = token.split('.')
   if (parts.length !== 3) {
     throw new Error('Invalid token format')
   }
-
   const [encodedHeader, encodedPayload, signature] = parts
-
-  // 验证签名
   const expectedSignature = await sign(`${encodedHeader}.${encodedPayload}`, secret)
   if (signature !== expectedSignature) {
     throw new Error('Invalid signature')
   }
-
-  // 解析 payload
+  // Decode payload
   const payload: JWTPayload = JSON.parse(base64UrlDecode(encodedPayload))
-
-  // 检查过�?
+  // Check expiration
   const now = Math.floor(Date.now() / 1000)
   if (payload.exp < now) {
     throw new Error('Token expired')
   }
-
   return payload
 }
-
 /**
- * 从请求头中提�?JWT
+ * Extract JWT from request
  */
 export function extractJWT(request: Request): string | null {
   const authHeader = request.headers.get('Authorization')
@@ -74,15 +60,13 @@ export function extractJWT(request: Request): string | null {
   }
   return authHeader.substring(7)
 }
-
 /**
- * 使用 Web Crypto API 签名
+ * Sign data using Web Crypto API
  */
 async function sign(data: string, secret: string): Promise<string> {
   const encoder = new TextEncoder()
   const keyData = encoder.encode(secret)
   const dataBuffer = encoder.encode(data)
-
   const key = await crypto.subtle.importKey(
     'raw',
     keyData,
@@ -90,17 +74,14 @@ async function sign(data: string, secret: string): Promise<string> {
     false,
     ['sign']
   )
-
   const signature = await crypto.subtle.sign('HMAC', key, dataBuffer)
   return base64UrlEncode(signature)
 }
-
 /**
- * Base64 URL 编码
+ * Base64 URL encode
  */
 function base64UrlEncode(data: string | ArrayBuffer): string {
   let base64: string
-
   if (typeof data === 'string') {
     base64 = btoa(data)
   } else {
@@ -108,12 +89,10 @@ function base64UrlEncode(data: string | ArrayBuffer): string {
     const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('')
     base64 = btoa(binary)
   }
-
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
-
 /**
- * Base64 URL 解码
+ * Base64 URL decode
  */
 function base64UrlDecode(data: string): string {
   let base64 = data.replace(/-/g, '+').replace(/_/g, '/')
@@ -122,19 +101,16 @@ function base64UrlDecode(data: string): string {
   }
   return atob(base64)
 }
-
 /**
- * 解析过期时间字符�?(�?"15m", "7d")
+ * Parse expiry string (e.g. "15m", "7d")
  */
 export function parseExpiry(expiry: string): number {
   const match = expiry.match(/^(\d+)([smhd])$/)
   if (!match) {
     throw new Error('Invalid expiry format')
   }
-
   const value = parseInt(match[1], 10)
   const unit = match[2]
-
   switch (unit) {
     case 's':
       return value

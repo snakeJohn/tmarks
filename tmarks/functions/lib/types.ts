@@ -1,18 +1,16 @@
 export interface Env {
   DB: D1Database
-  // TMARKS_KV?: KVNamespace // 统一缓存（公开分享、速率限制等）- 已移�?
+  // TMARKS_KV?: KVNamespace // Unified cache (public sharing, rate limiting, etc.) - Removed
   SNAPSHOTS_BUCKET?: R2Bucket // R2 bucket for bookmark snapshots
-  R2_PUBLIC_URL?: string // （可选）封面图使�?R2 存储时的对外访问域名（如 https://r2.example.com�?
-  R2_MAX_TOTAL_BYTES?: string // R2 总存储配额（字节），可选；不配置或 <= 0 表示不限�?
-  CORS_ALLOWED_ORIGINS?: string // CORS 允许的源列表（逗号分隔，如 https://example.com,https://app.example.com�?
+  R2_PUBLIC_URL?: string // (Optional) Public URL for R2 storage for cover images (e.g. https://r2.example.com)
+  R2_MAX_TOTAL_BYTES?: string // R2 total storage quota (bytes), optional; not configured or <= 0 means unlimited
+  CORS_ALLOWED_ORIGINS?: string // CORS allowed origins list (comma-separated, e.g. https://example.com,https://app.example.com)
   ALLOW_REGISTRATION?: string
   JWT_SECRET: string
   ENCRYPTION_KEY: string
   ENVIRONMENT?: string // 'development' | 'production'
   JWT_ACCESS_TOKEN_EXPIRES_IN?: string
   JWT_REFRESH_TOKEN_EXPIRES_IN?: string
-  
-  // 缓存配置
   CACHE_LEVEL?: string // '0' | '1' | '2' | '3' | 'none' | 'minimal' | 'standard' | 'aggressive'
   ENABLE_KV_CACHE?: string // 'true' | 'false'
   CACHE_TTL_DEFAULT_LIST?: string
@@ -23,7 +21,6 @@ export interface Env {
   MEMORY_CACHE_MAX_AGE?: string
   CACHE_DEBUG?: string // 'true' | 'false'
 }
-
 export interface User {
   id: string
   username: string
@@ -32,7 +29,6 @@ export interface User {
   created_at: string
   updated_at: string
 }
-
 export interface Bookmark {
   id: string
   user_id: string
@@ -53,13 +49,11 @@ export interface Bookmark {
   updated_at: string
   deleted_at: string | null
 }
-
 export interface BookmarkRow extends Omit<Bookmark, 'is_pinned' | 'is_archived' | 'is_public'> {
   is_pinned: number | boolean
   is_archived: number | boolean
   is_public: number | boolean
 }
-
 export interface PublicProfile {
   user_id: string
   public_share_enabled: boolean
@@ -68,7 +62,6 @@ export interface PublicProfile {
   public_page_description: string | null
   username: string
 }
-
 export interface Tag {
   id: string
   user_id: string
@@ -80,13 +73,11 @@ export interface Tag {
   updated_at: string
   deleted_at: string | null
 }
-
 export interface ApiError {
   code: string
   message: string
   details?: unknown
 }
-
 export interface ApiResponse<T = unknown> {
   data?: T
   error?: ApiError
@@ -97,7 +88,5 @@ export interface ApiResponse<T = unknown> {
     next_cursor?: string
   }
 }
-
 export type RouteParams = Record<string, string>
-
 export type SQLParam = string | number | boolean | null

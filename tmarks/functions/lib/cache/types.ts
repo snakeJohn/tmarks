@@ -1,79 +1,61 @@
 /**
- * 缓存系统类型定义
  * 
- * 提供类型安全的缓存配置和接口
+ * 
+ * 
  */
-
 /**
- * 缓存级别
- * - 0: 无缓�?(最低成�?
- * - 1: 最小缓�?(推荐默认)
- * - 2: 标准缓存 (推荐生产)
- * - 3: 激进缓�?(高性能)
+ * 
+
+ * - 2:  ()
+
  */
 export type CacheLevel = 0 | 1 | 2 | 3
-
 /**
- * 缓存策略类型
+ * 
  */
 export type CacheStrategyType =
-  | 'rateLimit'      // 速率限制 (必需)
-  | 'publicShare'    // 公开分享
-  | 'defaultList'    // 默认列表
-  | 'tagFilter'      // 标签筛�?
-  | 'search'         // 搜索结果
-  | 'complexQuery'   // 复杂查询
-
+  | 'rateLimit'      //  ()
+  | 'publicShare'    
+  | 'defaultList'    
+  | 'tagFilter'      // 
+  | 'search'         
+  | 'complexQuery'   
 /**
- * 缓存配置接口
+ * 
  */
 export interface CacheConfig {
-  /** 缓存级别 */
   level: CacheLevel
-  
-  /** 是否启用缓存 */
   enabled: boolean
-  
-  /** 各类查询的缓存策�?*/
+  /** 
   strategies: Record<CacheStrategyType, boolean>
-  
-  /** TTL 配置 (�? */
+  /** TTL  (
   ttl: Record<CacheStrategyType, number>
-  
-  /** 内存缓存配置 */
   memoryCache: {
     enabled: boolean
-    maxAge: number  // �?
+    maxAge: number  // 
   }
-  
-  /** 批量操作配置 */
   batchOperations: {
-    writeCache: boolean   // 是否写缓�?
-    asyncWrite: boolean   // 异步写入
+    writeCache: boolean   // 
+    asyncWrite: boolean   
   }
 }
-
 /**
- * 缓存条目
+ * 
  */
 export interface CacheEntry<T = unknown> {
   data: T
-  expires: number  // 时间�?
+  expires: number  // 
 }
-
 /**
- * 缓存操作选项
+ * 
  */
 export interface CacheSetOptions {
-  /** 是否异步写入 */
   async?: boolean
-  
-  /** 自定�?TTL (覆盖默认�? */
+  /** 
   ttl?: number
 }
-
 /**
- * 缓存统计信息
+ * 
  */
 export interface CacheStats {
   level: CacheLevel
@@ -84,9 +66,8 @@ export interface CacheStats {
   memCacheSize: number
   strategies: Record<CacheStrategyType, boolean>
 }
-
 /**
- * 查询参数接口 (用于缓存键生�?
+
  */
 export interface QueryParams {
   keyword?: string

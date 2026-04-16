@@ -23,7 +23,7 @@ export interface BookmarkStatistics {
     domain: string
     count: number
   }>
-  // 当前选择的时间范围内，每个书签的点击次数（按点击次数降序�?  bookmark_clicks: Array<{
+
     id: string
     title: string
     url: string
@@ -42,9 +42,9 @@ export interface BookmarkStatistics {
 }
 
 /**
- * 获取日期分组 SQL 片段
- * @param granularity 粒度: day, week, month, year
- * @param field 数据库字段名
+ *  SQL 
+ * @param granularity : day, week, month, year
+ * @param field 
  */
 export function getDateGroupSql(granularity: string, field: string) {
   let dateGroupBy = ''

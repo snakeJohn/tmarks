@@ -6,7 +6,7 @@ import { requireAuth, AuthContext } from '../../../middleware/auth'
 
 interface LogoutRequest {
   refresh_token: string
-  revoke_all?: boolean // 是否撤销所有设备的令牌
+  revoke_all?: boolean // 
 }
 
 export const onRequest: PagesFunction<Env, RouteParams, AuthContext>[] = [
@@ -23,7 +23,7 @@ export const onRequest: PagesFunction<Env, RouteParams, AuthContext>[] = [
       const now = new Date().toISOString()
 
       if (body.revoke_all) {
-        // 撤销该用户的所有刷新令�?        await context.env.DB.prepare(
+
           `UPDATE auth_tokens
            SET revoked_at = ?
            WHERE user_id = ? AND revoked_at IS NULL`
@@ -31,7 +31,7 @@ export const onRequest: PagesFunction<Env, RouteParams, AuthContext>[] = [
           .bind(now, userId)
           .run()
 
-        // 记录审计日志
+        // 
         const ip = context.request.headers.get('CF-Connecting-IP') || 'unknown'
         await context.env.DB.prepare(
           `INSERT INTO audit_logs (user_id, event_type, payload, ip, created_at)
@@ -40,7 +40,7 @@ export const onRequest: PagesFunction<Env, RouteParams, AuthContext>[] = [
           .bind(userId, JSON.stringify({ revoked_count: 'all' }), ip, now)
           .run()
       } else {
-        // 只撤销当前刷新令牌
+        // 
         const tokenHash = await hashRefreshToken(body.refresh_token)
 
         await context.env.DB.prepare(
@@ -51,7 +51,7 @@ export const onRequest: PagesFunction<Env, RouteParams, AuthContext>[] = [
           .bind(now, tokenHash, userId)
           .run()
 
-        // 记录审计日志
+        // 
         const ip = context.request.headers.get('CF-Connecting-IP') || 'unknown'
         await context.env.DB.prepare(
           `INSERT INTO audit_logs (user_id, event_type, payload, ip, created_at)

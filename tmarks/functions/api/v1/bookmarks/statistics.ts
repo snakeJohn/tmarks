@@ -1,7 +1,7 @@
 /**
- * 书签统计 API
- * 路径: /api/v1/bookmarks/statistics
- * 认证: JWT Token
+ *  API
+ * : /api/v1/bookmarks/statistics
+ * : JWT Token
  */
 
 import type { PagesFunction } from '@cloudflare/workers-types'
@@ -10,14 +10,14 @@ import { success, internalError } from '../../../lib/response'
 import { requireAuth, AuthContext } from '../../../middleware/auth'
 import { BookmarkStatistics, getDateGroupSql } from './statistics-helpers'
 
-// GET /api/v1/bookmarks/statistics - 获取书签统计数据
+// GET /api/v1/bookmarks/statistics - 
 export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
   requireAuth,
   async (context) => {
     const userId = context.data.user_id
     const url = new URL(context.request.url)
     
-    // 获取时间范围参数
+    // 
     const granularity = url.searchParams.get('granularity') || 'day' // day, week, month, year
     const startDate = url.searchParams.get('start_date') // YYYY-MM-DD
     const endDate = url.searchParams.get('end_date') // YYYY-MM-DD
@@ -25,14 +25,10 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
     try {
       const db = context.env.DB
 
-      // 准备趋势查询的分组条�?
-      // 6. 创建趋势 - 根据粒度动态分�?
       const { dateGroupBy, dateSelect } = getDateGroupSql(granularity, 'created_at')
 
-      // 7. 点击趋势（基于点击事件表 bookmark_click_events�?- 根据粒度动态分�?
       const { dateGroupBy: clickDateGroupBy, dateSelect: clickDateSelect } = getDateGroupSql(granularity, 'clicked_at')
 
-      // 🚀 并行执行所有查�?- 性能优化
       const [
         summary,
         tagCount,
@@ -44,7 +40,7 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
         clickTrends,
         bookmarkClickStats,
       ] = await Promise.all([
-        // 1. 汇总统�?
+
         db.prepare(
           `SELECT 
             COUNT(*) as total_bookmarks,
@@ -57,7 +53,7 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
           .bind(userId)
           .first(),
 
-        // 2. 标签计数
+        // 2. 
         db.prepare(
           `SELECT COUNT(*) as total_tags 
           FROM tags 
@@ -66,7 +62,7 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
           .bind(userId)
           .first(),
 
-        // 3. 热门书签 Top 10
+        // 3.  Top 10
         db.prepare(
           `SELECT id, title, url, click_count, last_clicked_at
           FROM bookmarks
@@ -77,7 +73,7 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
           .bind(userId)
           .all(),
 
-        // 4. 热门标签 Top 10（包含书签数量）
+        // 4.  Top 10（）
         db.prepare(
           `SELECT 
             t.id, 
@@ -95,7 +91,7 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
           .bind(userId)
           .all(),
 
-        // 5. 热门域名 Top 10
+        // 5.  Top 10
         db.prepare(
           `SELECT 
             CASE 
@@ -113,7 +109,6 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
           .bind(userId)
           .all(),
 
-        // 6. 最近点�?Top 10
         db.prepare(
           `SELECT id, title, url, last_clicked_at
           FROM bookmarks
@@ -124,7 +119,7 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
           .bind(userId)
           .all(),
 
-        // 7. 创建趋势
+        // 7. 
         db.prepare(
           `SELECT 
             ${dateSelect},
@@ -139,7 +134,6 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
           .bind(userId, ...[startDate, endDate].filter(Boolean))
           .all(),
 
-        // 8. 点击趋势（基�?bookmark_click_events�?
         db.prepare(
           `SELECT
             ${clickDateSelect},
@@ -154,7 +148,7 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
           .bind(userId, ...[startDate, endDate].filter(Boolean))
           .all(),
 
-        // 9. 当前时间范围内每个书签的点击次数
+        // 9. 
         db.prepare(
           `SELECT
             b.id,

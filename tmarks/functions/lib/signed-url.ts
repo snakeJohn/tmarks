@@ -1,14 +1,14 @@
 /**
- * 签名 URL 工具
- * 用于生成和验证带签名的临时访�?URL
- * 类似 AWS S3 Presigned URL 的实�?
+ * Signed URL Generator
+ * Generates secure signed URLs for temporary resource access
+ * Similar to AWS S3 Presigned URLs
  */
 
 export interface SignedUrlParams {
   userId: string
-  resourceId: string // 资源 ID（如 snapshot ID�?
-  expiresIn?: number // 有效期（秒），默�?1 小时
-  action?: string // 操作类型（如 'view', 'download'�?
+  resourceId: string // Resource ID (e.g. snapshot ID)
+  expiresIn?: number // Expiration time (seconds), default 1 hour
+  action?: string // Action type (e.g. 'view', 'download')
 }
 
 export interface SignedUrlData {
@@ -19,17 +19,17 @@ export interface SignedUrlData {
 }
 
 /**
- * 生成签名 URL
- * @param params 签名参数
- * @param secret 签名密钥
- * @returns 签名字符串和过期时间
+ * Generate signed URL
+ * @param params URL parameters
+ * @param secret Secret key for signing
+ * @returns Signature and expiration timestamp
  */
 export async function generateSignedUrl(
   params: SignedUrlParams,
   secret: string
 ): Promise<{ signature: string; expires: number }> {
   const now = Math.floor(Date.now() / 1000)
-  const expires = now + (params.expiresIn || 3600) // 默认 1 小时
+  const expires = now + (params.expiresIn || 3600) // Default 1 hour
 
   const data: SignedUrlData = {
     userId: params.userId,
@@ -38,7 +38,7 @@ export async function generateSignedUrl(
     action: params.action,
   }
 
-  // 生成签名字符�?
+  // Generate signature
   const message = `${data.userId}:${data.resourceId}:${data.expires}:${data.action || ''}`
   const signature = await sign(message, secret)
 
@@ -46,14 +46,14 @@ export async function generateSignedUrl(
 }
 
 /**
- * 验证签名 URL
- * @param signature 签名字符�?
- * @param expires 过期时间
- * @param userId 用户 ID
- * @param resourceId 资源 ID
- * @param action 操作类型
- * @param secret 签名密钥
- * @returns 是否有效
+ * Verify signed URL
+ * @param signature Signature string
+ * @param expires Expiration timestamp
+ * @param userId User ID
+ * @param resourceId Resource ID
+ * @param action Action type
+ * @param secret Secret key for verification
+ * @returns Validation result
  */
 export async function verifySignedUrl(
   signature: string,
@@ -63,13 +63,13 @@ export async function verifySignedUrl(
   secret: string,
   action?: string
 ): Promise<{ valid: boolean; error?: string }> {
-  // 检查是否过�?
+  // Check expiration
   const now = Math.floor(Date.now() / 1000)
   if (expires < now) {
     return { valid: false, error: 'URL has expired' }
   }
 
-  // 重新生成签名并比�?
+  // Verify signature
   const message = `${userId}:${resourceId}:${expires}:${action || ''}`
   const expectedSignature = await sign(message, secret)
 
@@ -81,7 +81,7 @@ export async function verifySignedUrl(
 }
 
 /**
- * 从请求中提取签名参数
+ * Extract signed URL parameters from request
  */
 export function extractSignedParams(request: Request): {
   signature: string | null
@@ -113,7 +113,7 @@ export function extractSignedParams(request: Request): {
 }
 
 /**
- * 使用 HMAC-SHA256 签名
+ * Generate HMAC-SHA256 signature
  */
 async function sign(message: string, secret: string): Promise<string> {
   const encoder = new TextEncoder()
@@ -130,7 +130,7 @@ async function sign(message: string, secret: string): Promise<string> {
 
   const signature = await crypto.subtle.sign('HMAC', key, messageData)
   
-  // 转换�?hex 字符串（更短更易读）
+  // Convert to hex string (lowercase)
   return Array.from(new Uint8Array(signature))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')

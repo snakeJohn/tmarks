@@ -1,5 +1,4 @@
 /**
- * Tab Groups 导出�?Netscape 书签格式的辅助工�? * 以「文件夹 + 书签」的方式序列化，便于导入到浏览器书签中备�? */
 
 import type { ExportTabGroup, ExportTabGroupItem } from '../../../../shared/import-export-types'
 

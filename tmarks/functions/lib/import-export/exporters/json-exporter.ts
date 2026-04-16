@@ -1,6 +1,6 @@
 /**
- * JSON 格式导出�?
- * 将书签数据导出为 TMarks 标准 JSON 格式
+
+ *  TMarks  JSON 
  */
 
 import type { 
@@ -15,13 +15,11 @@ export class JsonExporter implements Exporter {
 
   async export(data: TMarksExportData, options?: ExportOptions): Promise<ExportOutput> {
     try {
-      // 根据选项过滤数据
+      // 
       const filteredData = this.filterData(data, options)
-      
-      // 格式�?JSON
+
       const jsonContent = this.formatJson(filteredData, options)
-      
-      // 生成文件�?
+
       const filename = this.generateFilename(data.exported_at)
       
       return {
@@ -38,7 +36,7 @@ export class JsonExporter implements Exporter {
   private filterData(data: TMarksExportData, options?: ExportOptions): TMarksExportData {
     const filtered = { ...data }
 
-    // 根据选项过滤标签
+    // 
     if (!options?.include_tags) {
       filtered.tags = []
       filtered.bookmarks = filtered.bookmarks.map(bookmark => ({
@@ -47,12 +45,11 @@ export class JsonExporter implements Exporter {
       }))
     }
 
-    // 根据选项过滤元数�?
     if (!options?.include_metadata) {
       delete filtered.metadata
     }
 
-    // 根据选项过滤用户信息
+    // 
     if (!options?.format_options?.include_user_info) {
       filtered.user = {
         id: filtered.user.id,
@@ -61,7 +58,7 @@ export class JsonExporter implements Exporter {
       }
     }
 
-    // 根据选项过滤点击统计
+    // 
     if (!options?.format_options?.include_click_stats) {
       filtered.bookmarks = filtered.bookmarks.map(bookmark => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -92,19 +89,18 @@ export class JsonExporter implements Exporter {
   }
 
   /**
-   * 验证导出数据的完整�?
+
    */
   validateData(data: TMarksExportData): { valid: boolean; errors: string[] } {
     const errors: string[] = []
 
-    // 检查必需字段
+    // 
     if (!data.version) errors.push('Missing version field')
     if (!data.exported_at) errors.push('Missing exported_at field')
     if (!data.user?.id) errors.push('Missing user.id field')
     if (!Array.isArray(data.bookmarks)) errors.push('Bookmarks must be an array')
     if (!Array.isArray(data.tags)) errors.push('Tags must be an array')
 
-    // 检查书签数�?
     data.bookmarks.forEach((bookmark, index) => {
       if (!bookmark.id) errors.push(`Bookmark ${index}: missing id`)
       if (!bookmark.title) errors.push(`Bookmark ${index}: missing title`)
@@ -113,7 +109,6 @@ export class JsonExporter implements Exporter {
       if (!Array.isArray(bookmark.tags)) errors.push(`Bookmark ${index}: tags must be an array`)
     })
 
-    // 检查标签数�?
     data.tags.forEach((tag, index) => {
       if (!tag.id) errors.push(`Tag ${index}: missing id`)
       if (!tag.name) errors.push(`Tag ${index}: missing name`)
@@ -137,12 +132,12 @@ export class JsonExporter implements Exporter {
   }
 
   private isValidColor(color: string): boolean {
-    // 检查十六进制颜色格�?
+
     return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)
   }
 
   /**
-   * 获取导出统计信息
+   * 
    */
   getExportStats(data: TMarksExportData): {
     totalBookmarks: number
@@ -166,14 +161,14 @@ export class JsonExporter implements Exporter {
 }
 
 /**
- * 创建 JSON 导出器实�?
+
  */
 export function createJsonExporter(): JsonExporter {
   return new JsonExporter()
 }
 
 /**
- * 快速导出为 JSON 字符�?
+
  */
 export async function exportToJson(
   data: TMarksExportData, 
@@ -185,7 +180,7 @@ export async function exportToJson(
 }
 
 /**
- * 导出为压缩的 JSON
+ *  JSON
  */
 export async function exportToCompactJson(data: TMarksExportData): Promise<string> {
   const options: ExportOptions = {

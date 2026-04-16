@@ -1,5 +1,5 @@
 /**
- * 批量书签创建处理�?
+
  */
 
 import type { EventContext } from '@cloudflare/workers-types'
@@ -52,7 +52,7 @@ export async function batchCreateBookmarks(
     return badRequest('bookmarks array is required and cannot be empty')
   }
 
-  // 限制批量大小
+  // 
   if (bookmarks.length > 100) {
     return badRequest('Cannot create more than 100 bookmarks at once')
   }
@@ -68,12 +68,12 @@ export async function batchCreateBookmarks(
 
   const now = new Date().toISOString()
 
-  // 批量处理书签
+  // 
   for (let i = 0; i < bookmarks.length; i++) {
     const item = bookmarks[i]
 
     try {
-      // 验证必填字段
+      // 
       if (!item.title || !item.url) {
         result.failed++
         result.errors!.push({
@@ -84,7 +84,7 @@ export async function batchCreateBookmarks(
         continue
       }
 
-      // 验证 URL 格式
+      //  URL 
       if (!isValidUrl(item.url)) {
         result.failed++
         result.errors!.push({
@@ -104,7 +104,6 @@ export async function batchCreateBookmarks(
       const isArchived = item.is_archived ? 1 : 0
       const isPublic = item.is_public ? 1 : 0
 
-      // 检�?URL 是否已存�?
       const existing = await context.env.DB.prepare(
         'SELECT id, deleted_at FROM bookmarks WHERE user_id = ? AND url = ?'
       )
@@ -115,12 +114,12 @@ export async function batchCreateBookmarks(
 
       if (existing) {
         if (!existing.deleted_at) {
-          // 书签已存在，跳过
+          // ，
           result.skipped++
           continue
         }
 
-        // 恢复已删除的书签
+        // 
         bookmarkId = existing.id
         await context.env.DB.prepare(
           `UPDATE bookmarks
@@ -142,12 +141,11 @@ export async function batchCreateBookmarks(
           )
           .run()
 
-        // 清除旧标签关�?
         await context.env.DB.prepare('DELETE FROM bookmark_tags WHERE bookmark_id = ?')
           .bind(bookmarkId)
           .run()
       } else {
-        // 创建新书�?
+
         bookmarkId = generateUUID()
         await context.env.DB.prepare(
           `INSERT INTO bookmarks (id, user_id, title, url, description, cover_image, cover_image_id, favicon, is_pinned, is_archived, is_public, created_at, updated_at)
@@ -171,7 +169,7 @@ export async function batchCreateBookmarks(
           .run()
       }
 
-      // 处理标签
+      // 
       if (item.tags && item.tags.length > 0) {
         const { createOrLinkTags } = await import('../../../lib/tags')
         await createOrLinkTags(context.env.DB, bookmarkId, item.tags, userId)
@@ -195,12 +193,11 @@ export async function batchCreateBookmarks(
     }
   }
 
-  // 清理空错误数�?
   if (result.errors!.length === 0) {
     delete result.errors
   }
 
-  // 更新所有标签的 usage_count
+  //  usage_count
   if (result.success > 0) {
     await context.env.DB.prepare(
       `UPDATE tags
@@ -214,7 +211,7 @@ export async function batchCreateBookmarks(
       .run()
   }
 
-  // 清除缓存
+  // 
   await invalidatePublicShareCache(context.env, userId)
 
   console.log('[Batch Handler] Complete:', result)

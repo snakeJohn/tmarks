@@ -1,7 +1,7 @@
 /**
- * 统计数据 API
- * 路径: /api/v1/statistics
- * 认证: JWT Token (Bearer)
+ *  API
+ * : /api/v1/statistics
+ * : JWT Token (Bearer)
  */
 
 import type { PagesFunction } from '@cloudflare/workers-types'
@@ -14,7 +14,7 @@ interface DomainCount {
   count: number
 }
 
-// GET /api/v1/statistics - 获取使用统计
+// GET /api/v1/statistics - Retrieve user statistics
 export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
   requireAuth,
   async (context) => {
@@ -27,7 +27,7 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
     const startDateStr = startDate.toISOString().split('T')[0]
 
     try {
-      // 🚀 并行执行所有查�?- 性能优化
+      
       const [
         groupsResult,
         deletedGroupsResult,
@@ -38,35 +38,31 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
         domains,
         groupSizes
       ] = await Promise.all([
-        // 1. 活跃标签页组计数
+        
         context.env.DB.prepare(
           'SELECT COUNT(*) as count FROM tab_groups WHERE user_id = ? AND is_deleted = 0'
         )
           .bind(userId)
           .all<{ count: number }>(),
 
-        // 2. 已删除标签页组计�?
         context.env.DB.prepare(
           'SELECT COUNT(*) as count FROM tab_groups WHERE user_id = ? AND is_deleted = 1'
         )
           .bind(userId)
           .all<{ count: number }>(),
 
-        // 3. 标签页项目计�?
         context.env.DB.prepare(
           'SELECT COUNT(*) as count FROM tab_group_items WHERE group_id IN (SELECT id FROM tab_groups WHERE user_id = ?)'
         )
           .bind(userId)
           .all<{ count: number }>(),
 
-        // 4. 分享计数
         context.env.DB.prepare(
           'SELECT COUNT(*) as count FROM tab_group_shares WHERE group_id IN (SELECT id FROM tab_groups WHERE user_id = ?)'
         )
           .bind(userId)
           .all<{ count: number }>(),
 
-        // 5. 标签页组创建趋势
         context.env.DB.prepare(
           `SELECT DATE(created_at) as date, COUNT(*) as count 
            FROM tab_groups 
@@ -77,7 +73,6 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
           .bind(userId, startDateStr)
           .all<{ date: string; count: number }>(),
 
-        // 6. 标签页项目创建趋�?
         context.env.DB.prepare(
           `SELECT DATE(created_at) as date, COUNT(*) as count 
            FROM tab_group_items 
@@ -89,7 +84,6 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
           .bind(userId, startDateStr)
           .all<{ date: string; count: number }>(),
 
-        // 7. 热门域名 Top 10
         context.env.DB.prepare(
           `SELECT 
             CASE 
@@ -107,7 +101,6 @@ export const onRequestGet: PagesFunction<Env, string, AuthContext>[] = [
           .bind(userId)
           .all<DomainCount>(),
 
-        // 8. 标签页组大小分布
         context.env.DB.prepare(
           `SELECT 
             CASE 

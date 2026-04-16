@@ -4,12 +4,6 @@ import { requireAuth, AuthContext } from '../../../middleware/auth'
 import { success, internalError } from '../../../lib/response'
 import { getCurrentR2UsageBytes, getR2MaxTotalBytes } from '../../../lib/storage-quota'
 
-/**
- * R2 存储配额展示接口
- * GET /api/v1/settings/storage
- *
- * 返回当前 R2 使用量和配额信息（目前为全局配额，而非按用户划分）�?
- */
 export const onRequestGet: PagesFunction<Env, RouteParams, AuthContext>[] = [
   requireAuth,
   async (context) => {

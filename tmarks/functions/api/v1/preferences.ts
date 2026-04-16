@@ -12,7 +12,7 @@ import {
   validatePreferences
 } from './preferences-helpers'
 
-// GET /api/v1/preferences - 获取用户偏好
+// GET /api/v1/preferences - Retrieve user preferences
 export const onRequestGet: PagesFunction<Env, RouteParams, AuthContext>[] = [
   requireAuth,
   async (context) => {
@@ -39,7 +39,7 @@ export const onRequestGet: PagesFunction<Env, RouteParams, AuthContext>[] = [
   },
 ]
 
-// PATCH /api/v1/preferences - 更新用户偏好
+// PATCH /api/v1/preferences - Update user preferences
 export const onRequestPatch: PagesFunction<Env, RouteParams, AuthContext>[] = [
   requireAuth,
   async (context) => {
@@ -50,13 +50,11 @@ export const onRequestPatch: PagesFunction<Env, RouteParams, AuthContext>[] = [
       const sortBySupported = await hasSortByColumn(context.env.DB)
       const automationSupported = await hasAutomationColumns(context.env.DB)
 
-      // 验证输入
       const validationError = validatePreferences(body)
       if (validationError) {
         return badRequest(validationError)
       }
 
-      // 构建更新语句
       const updates: string[] = []
       const values: SQLParam[] = []
 
@@ -165,7 +163,6 @@ export const onRequestPatch: PagesFunction<Env, RouteParams, AuthContext>[] = [
       values.push(now)
       values.push(userId)
 
-      // 使用 batch 确保原子性：确保记录存在并更�?
       const insertStmt = context.env.DB.prepare(
         `INSERT INTO user_preferences (user_id)
          VALUES (?)
@@ -180,7 +177,6 @@ export const onRequestPatch: PagesFunction<Env, RouteParams, AuthContext>[] = [
 
       await context.env.DB.batch([insertStmt, updateStmt])
 
-      // 获取更新后的偏好
       const preferences = await context.env.DB.prepare(
         'SELECT * FROM user_preferences WHERE user_id = ?'
       )

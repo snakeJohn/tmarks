@@ -1,7 +1,7 @@
 /**
- * 对外 API - 书签管理
- * 路径: /api/tab/bookmarks
- * 认证: API Key (X-API-Key header)
+ *  API - 
+ * : /api/tab/bookmarks
+ * : API Key (X-API-Key header)
  */
 
 import type { PagesFunction } from '@cloudflare/workers-types'
@@ -29,11 +29,11 @@ interface CreateBookmarkRequest {
   description?: string
   cover_image?: string
   favicon?: string
-  tag_ids?: string[]  // 兼容旧版：标�?ID 数组
-  tags?: string[]     // 新版：标签名称数组（推荐�?
+  tag_ids?: string[]  // ：
+  tags?: string[]     // ：（
   is_pinned?: boolean
   is_public?: boolean
-  bookmarks?: Array<{  // 批量创建
+  bookmarks?: Array<{  // 
     title: string
     url: string
     description?: string
@@ -46,7 +46,7 @@ interface CreateBookmarkRequest {
   }>
 }
 
-// GET /api/bookmarks - 获取书签列表
+// GET /api/bookmarks - 
 export const onRequestGet: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[] = [
   requireApiKeyAuth('bookmarks.read'),
   async (context) => {
@@ -66,7 +66,6 @@ export const onRequestGet: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[] 
       const bookmarkIds = bookmarks.map(b => b.id)
       const tagsByBookmarkId = await fetchBookmarkTags(context.env.DB, bookmarkIds)
 
-      // 组装书签和标签数�?
       const bookmarksWithTags: BookmarkWithTags[] = bookmarks.map(row => {
         const normalized = normalizeBookmark(row)
         return {
@@ -91,7 +90,6 @@ export const onRequestGet: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[] 
   },
 ]
 
-// POST /api/bookmarks - 创建书签（支持单个和批量�?
 export const onRequestPost: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[] = [
   requireApiKeyAuth('bookmarks.create'),
   async (context) => {
@@ -100,7 +98,7 @@ export const onRequestPost: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[]
     try {
       const body = (await context.request.json()) as CreateBookmarkRequest
 
-      // 检测是否为批量创建请求
+      // 
       if (body.bookmarks && Array.isArray(body.bookmarks) && body.bookmarks.length > 0) {
         if (body.bookmarks.length > 100) {
           return badRequest('Cannot create more than 100 bookmarks at once')
@@ -112,7 +110,7 @@ export const onRequestPost: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[]
         return success(result)
       }
 
-      // 单个书签创建逻辑
+      // 
       if (!body.title || !body.url) {
         return badRequest({
           message: 'Title and URL are required',
@@ -130,7 +128,6 @@ export const onRequestPost: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[]
       let coverImage = body.cover_image ? sanitizeString(body.cover_image, 2000) : null
       const favicon = body.favicon ? sanitizeString(body.favicon, 2000) : null
 
-      // 检查URL是否已存在（包括已删除的�?
       const existing = await context.env.DB.prepare(
         'SELECT id, deleted_at FROM bookmarks WHERE user_id = ? AND url = ?'
       )
@@ -142,7 +139,7 @@ export const onRequestPost: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[]
       const isPinned = body.is_pinned ? 1 : 0
       const isPublic = body.is_public ? 1 : 0
 
-      // 如果有封面图且配置了 R2 bucket，上传到 R2
+      //  R2 bucket， R2
       let coverImageId: string | null = null
       if (coverImage && context.env.SNAPSHOTS_BUCKET && context.env.R2_PUBLIC_URL) {
         const tempBookmarkId = existing?.id || generateUUID()
@@ -164,7 +161,7 @@ export const onRequestPost: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[]
 
       if (existing) {
         if (!existing.deleted_at) {
-          // 返回现有书签信息
+          // 
           const bookmarkRow = await context.env.DB.prepare('SELECT * FROM bookmarks WHERE id = ? AND user_id = ?')
             .bind(existing.id, userId)
             .first<BookmarkRow>()
@@ -207,7 +204,7 @@ export const onRequestPost: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[]
           )
         }
 
-        // 恢复已删除的书签
+        // 
         bookmarkId = existing.id
         await context.env.DB.prepare(
           `UPDATE bookmarks
@@ -223,7 +220,7 @@ export const onRequestPost: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[]
           .bind(bookmarkId, userId)
           .run()
       } else {
-        // 创建新书�?
+
         bookmarkId = generateUUID()
         await context.env.DB.prepare(
           `INSERT INTO bookmarks (id, user_id, title, url, description, cover_image, cover_image_id, favicon, is_pinned, is_public, created_at, updated_at)
@@ -233,7 +230,7 @@ export const onRequestPost: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[]
           .run()
       }
 
-      // 处理标签
+      // 
       if (body.tags && body.tags.length > 0) {
         await createOrLinkTags(context.env.DB, bookmarkId, body.tags, userId)
       } else if (body.tag_ids && body.tag_ids.length > 0) {
@@ -246,7 +243,6 @@ export const onRequestPost: PagesFunction<Env, RouteParams, ApiKeyAuthContext>[]
         }
       }
 
-      // 获取完整的书签信�?
       const bookmarkRow = await context.env.DB.prepare('SELECT * FROM bookmarks WHERE id = ? AND user_id = ?')
         .bind(bookmarkId, userId)
         .first<BookmarkRow>()
