@@ -6,10 +6,10 @@
  */
 
 import type { PagesFunction } from '@cloudflare/workers-types'
-import type { Env, RouteParams, SQLParam } from '../../lib/types'
-import { success, badRequest, notFound, internalError } from '../../lib/response'
+import type { Env, RouteParams, SQLParam } from '../../../../lib/types'
+import { success, badRequest, notFound, internalError } from '../../../../lib/response'
 import { requireAuth, AuthContext } from '../../../../middleware/auth'
-import { getApiKeyStats } from '../../lib/api-key/logger'
+import { getApiKeyStats } from '../../../../lib/api-key/logger'
 import { PERMISSION_TEMPLATES } from '../../../../../shared/permissions'
 
 interface UpdateApiKeyRequest {
@@ -135,7 +135,7 @@ export const onRequestPatch: PagesFunction<Env, RouteParams, AuthContext>[] = [
 
           //  (30d, 90d )  ISO 
           if (expires_at.match(/^\d+d$/)) {
-            const days = parseInt(expires_at.slice(0, -1))
+            const days = parseInt(expires_at.slice(0, -1), 10)
             expiresDate = new Date()
             expiresDate.setDate(expiresDate.getDate() + days)
           } else {
